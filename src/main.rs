@@ -12,7 +12,7 @@ use regex::Regex;
 const TOOLS_DIR: &str = "/usr/local/bin"; // change to match your image layout
 
 fn list_available_tools() -> Vec<String> {
-    fs::read_dir(TOOLS_DIR)
+    let mut list: Vec<String> = fs::read_dir(TOOLS_DIR)
         .expect("Failed to read tools directory")
         .filter_map(|entry| {
             let entry = entry.ok()?;
@@ -23,7 +23,9 @@ fn list_available_tools() -> Vec<String> {
                 None
             }
         })
-        .collect()
+        .collect();
+    list.sort_by_key(|x| x.to_lowercase());
+    list
 }
 
 fn is_executable(path: &PathBuf) -> bool {
