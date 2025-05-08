@@ -1,0 +1,7 @@
+testing acdpromptsacdArgsScan -help argv[0]
+acdArgsScan acdDebug No acdDoHelp Yes
+Trying acdfile '/usr/share/EMBOSS/acd/--help.acd' (installed)
+acdfile '/usr/share/EMBOSS/acd/--help.acd' not opened
+acdfile '/usr/share/EMBOSS/acd/--help.acd' not opened
+Trying acdfile '/usr/share/EMBOSS/acd/--help.acd' (original main source)
+acdfile '/usr/share/EMBOSS/acd/--help.acd' not opened

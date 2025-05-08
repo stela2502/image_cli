@@ -1,18 +1,30 @@
-use std::env;
 use std::fs;
 use std::path::PathBuf;
-use std::process::{Command, exit};
+use std::process::{Command};
 use std::os::unix::fs::PermissionsExt;
 use term_size::dimensions;
 use ansi_term::Style;
 use regex::Regex;
+use clap::{Parser};
 
-/// List of known binary tools shipped with the image.
-/// These could be dynamically scanned from a directory as well.
-const TOOLS_DIR: &str = "/usr/local/bin"; // change to match your image layout
 
-fn list_available_tools() -> Vec<String> {
-    let mut list: Vec<String> = fs::read_dir(TOOLS_DIR)
+/// Lists available tools from path by calling them using the --help option and parsing the output
+#[derive(Parser, Debug)]
+#[command(name = "image_cli")]
+struct Cli {
+    /// An optional wrapper command (e.g. Rustody) if describing an images capabilities. If not provided, list local tools.
+    #[arg(long, short)]
+    wrapper: Option<String>,
+
+    /// Path to search for local binaries (used only if wrapper is unset or empty)
+    #[arg(long, short, default_value = "/usr/local/bin")]
+    path: String,
+
+}
+
+
+fn list_available_tools( tools_dir:&str ) -> Vec<String> {
+    let mut list: Vec<String> = fs::read_dir(tools_dir)
         .expect("Failed to read tools directory")
         .filter_map(|entry| {
             let entry = entry.ok()?;
@@ -98,12 +110,12 @@ fn wrap_text_with_indent(text: &str, indent: usize, max_width: usize) -> String 
     result.trim_start().to_string()
 }
 
-fn print_summary() {
+fn print_summary( wrapper:&str, path:&str ) {
     let width = dimensions().map(|(w, _)| w).unwrap_or(80);
     let indent = 20;
-    println!("Available Rustody tools:\n");
+    println!("Available {wrapper} tools:\n");
 
-    for tool in list_available_tools() {
+    for tool in list_available_tools( path ) {
         let styled_tool = Style::new().bold().paint(format!("{:<indent$}", tool, indent = indent));
         let help = get_brief_help(&tool).unwrap_or("(no help available)".to_string());
         let wrapped_help = wrap_text_with_indent(&help, indent, width - indent);
@@ -114,29 +126,15 @@ fn print_summary() {
             println!("{}{:<indent$}", styled_tool, wrapped_help, indent = indent - tool.len() );
         }
     }
-    println!("\nUsage: Rustody <tool> [args...]\nFor help on a tool: Rustody <tool> --help");
+    println!("\nUsage: {wrapper} <tool> [args...]\nFor help on a tool: {wrapper} <tool> --help");
 }
 
-fn dispatch_command(args: &[String]) {
-    let binary = &args[0];
-    let rest = &args[1..];
-
-    let status = Command::new(binary)
-        .args(rest)
-        .status()
-        .unwrap_or_else(|_| {
-            eprintln!("Error: failed to run tool '{}'. Is it in $PATH?", binary);
-            exit(1);
-        });
-
-    exit(status.code().unwrap_or(1));
-}
 
 fn main() {
-    let args: Vec<String> = env::args().skip(1).collect();
-    if args.is_empty() {
-        print_summary();
-    } else {
-        dispatch_command(&args);
-    }
+    let cli = Cli::parse();
+    let wrapper = match cli.wrapper{
+        Some(n) => n,
+        None => "".to_string(),
+    };
+    print_summary( &wrapper, &cli.path );
 }

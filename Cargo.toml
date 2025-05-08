@@ -9,3 +9,4 @@ description = "A wrapper CLI for running and documenting Rust binaries in an ima
 term_size = "0.3"
 ansi_term = "0.12"
 regex = "1"
+clap = { version = "4", features = ["derive"] }
