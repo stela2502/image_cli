@@ -74,11 +74,17 @@ fn print_summary() {
     let width = dimensions().map(|(w, _)| w).unwrap_or(80);
     let indent = 20;
     println!("Available Rustody tools:\n");
+
     for tool in list_available_tools() {
         let styled_tool = Style::new().bold().paint(format!("{:<indent$}", tool, indent = indent));
         let help = get_brief_help(&tool).unwrap_or("(no help available)".to_string());
         let wrapped_help = wrap_text_with_indent(&help, indent, width - indent);
-        println!("{}{}", styled_tool, wrapped_help);
+
+        if tool.len() >= indent {
+            println!("{}\n{:indent$}{}", styled_tool, "", wrapped_help, indent = indent);
+        } else {
+            println!("{}{:<indent$}", styled_tool, wrapped_help, indent = indent - tool.len() );
+        }
     }
     println!("\nUsage: Rustody <tool> [args...]\nFor help on a tool: Rustody <tool> --help");
 }
@@ -99,11 +105,10 @@ fn dispatch_command(args: &[String]) {
 }
 
 fn main() {
-    let args: Vec<String> = env::args().skip(1).collect();
+    let mut args: Vec<String> = env::args().skip(1).collect();
     if args.is_empty() {
         print_summary();
     } else {
         dispatch_command(&args);
     }
 }
-
