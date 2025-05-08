@@ -5,6 +5,7 @@ use std::process::{Command, exit};
 use std::os::unix::fs::PermissionsExt;
 use term_size::dimensions;
 use ansi_term::Style;
+use regex::Regex;
 
 /// List of known binary tools shipped with the image.
 /// These could be dynamically scanned from a directory as well.
@@ -39,9 +40,34 @@ fn get_brief_help(binary: &str) -> Option<String> {
 
     if output.status.success() {
         let help_text = String::from_utf8_lossy(&output.stdout);
-        help_text.lines().next().map(|l| l.trim().to_string())
+        
+        // Split into lines and remove leading/trailing whitespace
+        let lines: Vec<&str> = help_text.lines().map(|line| line.trim()).collect();
+
+        // Define a regex to match a version pattern (e.g., 1.0.0, 1.1.0, etc.)
+        let version_regex = Regex::new(r"^\S+\s+(\d+\.\d+\.\d+)$").unwrap();
+
+        // Skip metadata lines (lines consisting of two words where the second is a version)
+        for line in &lines {
+            // Try to match the version pattern (e.g., "rustody 1.1.0")
+            if let Some(_captures) = version_regex.captures(line) {
+                // If the second word is a valid version, skip this line as it's metadata
+                if lines.len() > 2 {
+                    if lines[2].trim().len() > 2 {
+                        return Some(lines[2].trim().to_string())
+                    }else {
+                        return Some("could not parse the help string".to_string())
+                    }
+                }
+
+            }else {
+                return Some(line.to_string())
+            }
+            
+        }
+        Some("could not parse the help string".to_string())
     } else {
-        None
+         Some("no command help available".to_string())
     }
 }
 
@@ -105,7 +131,7 @@ fn dispatch_command(args: &[String]) {
 }
 
 fn main() {
-    let mut args: Vec<String> = env::args().skip(1).collect();
+    let args: Vec<String> = env::args().skip(1).collect();
     if args.is_empty() {
         print_summary();
     } else {
