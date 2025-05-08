@@ -2,5 +2,9 @@
 name = "image_cli"
 version = "0.1.0"
 edition = "2024"
+authors = ["Stefan Lang <Stefan.Lang@med.lu.se>"]
+description = "A wrapper CLI for running and documenting Rust binaries in an image"
 
 [dependencies]
+term_size = "0.3"
+ansi_term = "0.12"

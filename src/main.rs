@@ -3,6 +3,8 @@ use std::fs;
 use std::path::PathBuf;
 use std::process::{Command, exit};
 use std::os::unix::fs::PermissionsExt;
+use term_size::dimensions;
+use ansi_term::Style;
 
 /// List of known binary tools shipped with the image.
 /// These could be dynamically scanned from a directory as well.
@@ -43,11 +45,40 @@ fn get_brief_help(binary: &str) -> Option<String> {
     }
 }
 
+fn wrap_text_with_indent(text: &str, indent: usize, max_width: usize) -> String {
+    let mut result = String::new();
+    let mut line = String::new();
+    let words = text.split_whitespace();
+    let mut width = 0;
+    for word in words {
+        if width + word.len() + 1 > max_width {
+            result.push_str(&format!("\n{:indent$}{}", "", line, indent = indent));
+            line = word.to_string();
+            width = word.len();
+        } else {
+            if !line.is_empty() {
+                line.push(' ');
+                width += 1;
+            }
+            line.push_str(word);
+            width += word.len();
+        }
+    }
+    if !line.is_empty() {
+        result.push_str(&format!("\n{:indent$}{}", "", line, indent = indent));
+    }
+    result.trim_start().to_string()
+}
+
 fn print_summary() {
+    let width = dimensions().map(|(w, _)| w).unwrap_or(80);
+    let indent = 20;
     println!("Available Rustody tools:\n");
     for tool in list_available_tools() {
+        let styled_tool = Style::new().bold().paint(format!("{:<indent$}", tool, indent = indent));
         let help = get_brief_help(&tool).unwrap_or("(no help available)".to_string());
-        println!("{:15} {}", tool, help);
+        let wrapped_help = wrap_text_with_indent(&help, indent, width - indent);
+        println!("{}{}", styled_tool, wrapped_help);
     }
     println!("\nUsage: Rustody <tool> [args...]\nFor help on a tool: Rustody <tool> --help");
 }
